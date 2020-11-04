@@ -1,0 +1,192 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>使用Nginx搭建Http文件服务器 | Rocsun</title><meta name="keywords" content="nginx 文件服务器"><meta name="author" content="Rocsun"><meta name="copyright" content="Rocsun"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><meta name="description" content="前言前段时间将GitHub上的项目UnblockNeteaseMusic做成了可以一键安装配置的可安装程序(UnblockNeteaseMusic一键搭建),需要能够下载，因此使用Nginx来搭建Http文件服务器来提供下载功能。  安装Nginx由于我使用的是阿里云服务器，系统是centos，因此安装Nginx非常简单，直接sudo yum install nginx，如果是ubuntu系统，则">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用Nginx搭建Http文件服务器">
+<meta property="og:url" content="https://rocsun.github.io/2020/11/03/file-server/index.html">
+<meta property="og:site_name" content="Rocsun">
+<meta property="og:description" content="前言前段时间将GitHub上的项目UnblockNeteaseMusic做成了可以一键安装配置的可安装程序(UnblockNeteaseMusic一键搭建),需要能够下载，因此使用Nginx来搭建Http文件服务器来提供下载功能。  安装Nginx由于我使用的是阿里云服务器，系统是centos，因此安装Nginx非常简单，直接sudo yum install nginx，如果是ubuntu系统，则">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://gitee.com/webpeng/pictures/raw/master/img/20201103124408.jpg">
+<meta property="article:published_time" content="2020-11-03T04:30:28.000Z">
+<meta property="article:modified_time" content="2020-11-04T07:23:28.351Z">
+<meta property="article:author" content="Rocsun">
+<meta property="article:tag" content="nginx 文件服务器">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://gitee.com/webpeng/pictures/raw/master/img/20201103124408.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://rocsun.github.io/2020/11/03/file-server/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  hexoversion: '5.2.0',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: {"limitCount":50,"languages":{"author":"作者: Rocsun","link":"链接: ","source":"来源: Rocsun","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。"}},
+  ClickShowText: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  justifiedGallery: {
+    js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+    css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+  },
+  isPhotoFigcaption: true,
+  islazyload: false,
+  isanchor: false
+};
+
+var saveToLocal = {
+  set: function setWithExpiry(key, value, ttl) {
+    const now = new Date()
+    const expiryDay = ttl * 86400000
+    const item = {
+      value: value,
+      expiry: now.getTime() + expiryDay,
+    }
+    localStorage.setItem(key, JSON.stringify(item))
+  },
+
+  get: function getWithExpiry(key) {
+    const itemStr = localStorage.getItem(key)
+
+    if (!itemStr) {
+      return undefined
+    }
+    const item = JSON.parse(itemStr)
+    const now = new Date()
+
+    if (now.getTime() > item.expiry) {
+      localStorage.removeItem(key)
+      return undefined
+    }
+    return item.value
+  }
+}</script><script id="config_change">var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isSidebar: true,
+  postUpdate: '2020-11-04 15:23:28'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(function () {
+  window.activateDarkMode = function () {
+    document.documentElement.setAttribute('data-theme', 'dark')
+    if (document.querySelector('meta[name="theme-color"]') !== null) {
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+    }
+  }
+  window.activateLightMode = function () {
+    document.documentElement.setAttribute('data-theme', 'light')
+    if (document.querySelector('meta[name="theme-color"]') !== null) {
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+    }
+  }
+
+  const autoChangeMode = 'true'
+  const t = saveToLocal.get('theme')
+  if (autoChangeMode === '1') {
+    const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const isLightMode = window.matchMedia('(prefers-color-scheme: light)').matches
+    const isNotSpecified = window.matchMedia('(prefers-color-scheme: no-preference)').matches
+    const hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+    if (t === undefined) {
+      if (isLightMode) activateLightMode()
+      else if (isDarkMode) activateDarkMode()
+      else if (isNotSpecified || hasNoSupport) {
+        const now = new Date()
+        const hour = now.getHours()
+        const isNight = hour <= 6 || hour >= 18
+        isNight ? activateDarkMode() : activateLightMode()
+      }
+      window.matchMedia('(prefers-color-scheme: dark)').addListener(function (e) {
+        if (saveToLocal.get('theme') === undefined) {
+          e.matches ? activateDarkMode() : activateLightMode()
+        }
+      })
+    } else if (t === 'light') activateLightMode()
+    else activateDarkMode()
+  } else if (autoChangeMode === '2') {
+    const now = new Date()
+    const hour = now.getHours()
+    const isNight = hour <= 6 || hour >= 18
+    if (t === undefined) isNight ? activateDarkMode() : activateLightMode()
+    else if (t === 'light') activateLightMode()
+    else activateDarkMode()
+  } else {
+    if (t === 'dark') activateDarkMode()
+    else if (t === 'light') activateLightMode()
+  }
+})()</script><link rel="stylesheet" href="//at.alicdn.com/t/font_2157859_f9fsrqu3cyh.css"><link rel="stylesheet" href="//at.alicdn.com/t/font_2157886_nxp1tdcmcc.css"><meta name="generator" content="Hexo 5.2.0"><link rel="alternate" href="/atom.xml" title="Rocsun" type="application/atom+xml">
+</head><body><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="https://gitee.com/webpeng/pictures/raw/master/img/20201025135754.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">文章</div><div class="length_num">2</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">标签</div><div class="length_num">2</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> 清单</span><i class="fas fa-chevron-down expand"></i></a><ul class="menus_item_child"><li><a class="site-page" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div id="body-wrap"><div id="sidebar"><i class="fas fa-arrow-right on" id="toggle-sidebar"></i><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E8%A8%80"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85Nginx"><span class="toc-number">2.</span> <span class="toc-text">安装Nginx</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AENginx"><span class="toc-number">3.</span> <span class="toc-text">配置Nginx</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A6%96%E5%85%88%E5%9C%A8http%E4%B8%AD%E5%8A%A0%E4%B8%8A"><span class="toc-number">3.1.</span> <span class="toc-text">首先在http中加上</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%84%B6%E5%90%8E%E5%9C%A8http%E6%96%B0%E5%8A%A0%E4%B8%80%E4%B8%AAserver"><span class="toc-number">3.2.</span> <span class="toc-text">然后在http新加一个server</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8CNginx"><span class="toc-number">4.</span> <span class="toc-text">运行Nginx</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%80%E5%90%AF%E9%98%B2%E7%81%AB%E5%A2%99"><span class="toc-number">5.</span> <span class="toc-text">开启防火墙</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0%E8%A7%84%E5%88%99"><span class="toc-number">5.1.</span> <span class="toc-text">添加规则</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B7%E4%BD%93%E9%85%8D%E7%BD%AE"><span class="toc-number">5.2.</span> <span class="toc-text">具体配置</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95"><span class="toc-number">6.</span> <span class="toc-text">测试</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8FileZilla%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6%E5%88%B0%E6%9C%8D%E5%8A%A1%E5%99%A8-file-%E6%B5%8B%E8%AF%95%E4%B8%80%E4%B8%8B%E3%80%82"><span class="toc-number">6.1.</span> <span class="toc-text">使用FileZilla上传文件到服务器&#x2F;file&#x2F;测试一下。</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%89%93%E5%BC%80%E7%BD%91%E9%A1%B5"><span class="toc-number">6.2.</span> <span class="toc-text">打开网页</span></a></li></ol></li></ol></div></div></div><header class="post-bg" id="page-header" style="background-image: url(https://gitee.com/webpeng/pictures/raw/master/img/20201103124408.jpg)"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Rocsun</a></span><span id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><i class="fa-fw fas fa-list"></i><span> 清单</span><i class="fas fa-chevron-down expand"></i></a><ul class="menus_item_child"><li><a class="site-page" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><span class="close" id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></span></span></nav><div id="post-info"><div id="post-title"><div class="posttitle">使用Nginx搭建Http文件服务器</div></div><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2020-11-03T04:30:28.000Z" title="发表于 2020-11-03 12:30:28">2020-11-03</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2020-11-04T07:23:28.351Z" title="更新于 2020-11-04 15:23:28">2020-11-04</time></span></div><div class="meta-secondline"> <span class="post-meta-separator">|</span><span class="post-meta-pv-cv"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout_post" id="content-inner"><article id="post"><div class="post-content" id="article-container"><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>前段时间将GitHub上的项目<a target="_blank" rel="noopener" href="https://github.com/nondanee/UnblockNeteaseMusic">UnblockNeteaseMusic</a>做成了可以一键安装配置的<a href="39.106.23.242:2333/网抑云安装包.exe">可安装程序</a>(<a href="https://rocsun.github.io/">UnblockNeteaseMusic一键搭建</a>),需要能够下载，因此使用Nginx来搭建Http文件服务器来提供下载功能。</p>
+<hr>
+<h2 id="安装Nginx"><a href="#安装Nginx" class="headerlink" title="安装Nginx"></a>安装Nginx</h2><p>由于我使用的是阿里云服务器，系统是centos，因此安装Nginx非常简单，直接<code>sudo yum install nginx</code>，如果是ubuntu系统，则使用<code>sudo apt-get install nginx</code>即可。当然也可以到Nginx官网下载压缩包直接解压使用或者源码安装。</p>
+<p><img src="https://gitee.com/webpeng/pictures/raw/master/img/20201104142235.png" alt="安装Nginx"></p>
+<blockquote>
+<p>我这里由于使用的是root账号，所以没有加sudo，如果不是root一定记得加sudo，后面的命也都是。</p>
+</blockquote>
+<hr>
+<h2 id="配置Nginx"><a href="#配置Nginx" class="headerlink" title="配置Nginx"></a>配置Nginx</h2><p>如果使用yum或者apt-get安装，Nginx的配置文件默认为/etc/nginx/nginx.conf。修改配置文件<code>sudo vim /etc/nginx/nginx.conf</code></p>
+<h3 id="首先在http中加上"><a href="#首先在http中加上" class="headerlink" title="首先在http中加上"></a>首先在http中加上</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">autoindex on;# 显示目录</span><br><span class="line">autoindex_exact_size on;# 显示文件大小</span><br><span class="line">autoindex_localtime on;# 显示文件时间</span><br><span class="line">charset utf-8,gbk;#解决中文乱码</span><br></pre></td></tr></table></figure>
+
+<h3 id="然后在http新加一个server"><a href="#然后在http新加一个server" class="headerlink" title="然后在http新加一个server"></a>然后在http新加一个server</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">    listen       2333 default_server;</span><br><span class="line">    listen       [::]:2333 default_server;</span><br><span class="line">    server_name  _;</span><br><span class="line">    root         &#x2F;file&#x2F;;</span><br><span class="line"></span><br><span class="line">    # Load configuration files for the default server block.</span><br><span class="line">    include &#x2F;etc&#x2F;nginx&#x2F;default.d&#x2F;*.conf;</span><br><span class="line"></span><br><span class="line">    location &#x2F; &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    error_page 404 &#x2F;404.html;</span><br><span class="line">    location &#x3D; &#x2F;404.html &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    error_page 500 502 503 504 &#x2F;50x.html;</span><br><span class="line">    location &#x3D; &#x2F;50x.html &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="https://gitee.com/webpeng/pictures/raw/master/img/20201104151110.png" alt="修改配置文件"></p>
+<blockquote>
+<p>修改完成后保存退出，先点Esc，然后<code>:wq</code>,回车。配置中的root /file/为文件存储位置，默认是没有file这个文件夹的，需要自己<code>sudo mkdir /file</code>创建一下。</p>
+</blockquote>
+<h2 id="运行Nginx"><a href="#运行Nginx" class="headerlink" title="运行Nginx"></a>运行Nginx</h2><p>运行Nginx很简单,直接<code>nginx</code>就可以了，在使用<code>nginx</code>之前最好使用<code>nginx -t</code>测试一下。</p>
+<blockquote>
+<p>修改配置后重新加载生效: <code>nginx -s reload</code><br>重新打开日志文件： <code>nginx -s reopen</code><br>快速停止Nginx：<code>nginx -s stop</code><br>完整有序的停止nginx：<code>nginx -s quit</code><br>测试当前配置文件是否正确：<code>nginx -t</code>  </p>
+</blockquote>
+<h2 id="开启防火墙"><a href="#开启防火墙" class="headerlink" title="开启防火墙"></a>开启防火墙</h2><p>由于上面服务我们用的2333端口，因此需要开启防火墙，这个可以直接在阿里云控制台打开，其他服务器大致相同，自行百度。</p>
+<p><img src="https://gitee.com/webpeng/pictures/raw/master/img/20201104144952.png" alt="服务器"></p>
+<h3 id="添加规则"><a href="#添加规则" class="headerlink" title="添加规则"></a>添加规则</h3><p><img src="https://gitee.com/webpeng/pictures/raw/master/img/20201104150147.png" alt="添加规则"></p>
+<blockquote>
+<p>点击服务器后找到防火墙，然后点击添加规则  </p>
+</blockquote>
+<h3 id="具体配置"><a href="#具体配置" class="headerlink" title="具体配置"></a>具体配置</h3><p><img src="https://gitee.com/webpeng/pictures/raw/master/img/20201104145302.png" alt="具体配置"></p>
+<blockquote>
+<p>应用类型：自定义<br>协议：TCP<br>端口范围：2333,具体使用的哪个端口就开哪个端口<br>备注：这里随意，可以填文件服务器  </p>
+</blockquote>
+<p>完成后确定即可</p>
+<hr>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><h3 id="使用FileZilla上传文件到服务器-file-测试一下。"><a href="#使用FileZilla上传文件到服务器-file-测试一下。" class="headerlink" title="使用FileZilla上传文件到服务器/file/测试一下。"></a>使用FileZilla上传文件到服务器/file/测试一下。</h3><p><img src="https://gitee.com/webpeng/pictures/raw/master/img/20201104150644.png" alt="传输文件"></p>
+<h3 id="打开网页"><a href="#打开网页" class="headerlink" title="打开网页"></a>打开网页</h3><p><img src="https://gitee.com/webpeng/pictures/raw/master/img/20201104151658.png" alt="文件服务器网页"></p>
+<blockquote>
+<p>点击网抑云安装包或者直接在浏览器输入<code>服务器IP:2333/网抑云安装包.exe</code></p>
+</blockquote>
+<p><img src="https://gitee.com/webpeng/pictures/raw/master/img/20201104152001.png" alt="下载"></p>
+<blockquote>
+<p>弹出下载页面</p>
+</blockquote>
+<p><strong>文件服务器搭建成功！！！</strong></p>
+</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Rocsun</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://rocsun.github.io/2020/11/03/file-server/">https://rocsun.github.io/2020/11/03/file-server/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://rocsun.github.io" target="_blank">Rocsun</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/nginx-%E6%96%87%E4%BB%B6%E6%9C%8D%E5%8A%A1%E5%99%A8/">nginx 文件服务器</a></div><div class="post_share"><div class="social-share" data-image="https://gitee.com/webpeng/pictures/raw/master/img/20201103124408.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/2020/10/25/picture-bed/"><img class="next-cover" src="https://gitee.com/webpeng/pictures/raw/master/img/20201025133317.jpg" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">PicGo+Gitte(码云)搭建图床</div></div></a></div></nav></article></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 By Rocsun</div><div class="footer_custom_text">Hi, welcome to my <a href="https://rocsun.github.io/">blog</a>!</div><div class="icp"><a target="_blank" rel="noopener" href="http://www.beian.gov.cn/"><img class="icp-icon" src="/img/icp.png"/><span>渝ICP备19012594号</span></a></div></div></footer></div><section id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></section><div><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><div class="js-pjax"><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div><canvas class="fireworks" mobile="false"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/fireworks.min.js"></script><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="true" data-click="true"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/activate-power-mode.min.js"></script><script>POWERMODE.colorful = true;
+POWERMODE.shake = true;
+POWERMODE.mobile = false;
+document.body.addEventListener('input', POWERMODE);
+</script></div><script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/assets/haru02.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true},"react":{"opacity":1},"log":false});</script></body></html>
